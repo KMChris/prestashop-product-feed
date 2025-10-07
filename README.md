@@ -1,13 +1,13 @@
-# CSV → Google Merchant XML (PrestaShop)
+# Google Merchant product feed XML (PrestaShop)
 
-Konwerter CSV (eksport z PrestaShop) do feedu XML zgodnego z Google Merchant (RSS 2.0 z przestrzenią `g:`). Repo zawiera gotową aplikację web (Flask) do wgrywania CSV oraz narzędzie CLI do konwersji wsadowej. Do generowania CSV możesz użyć dołączonego zapytania SQL.
+Lekka aplikacja, która hostuje plik `product-feed.xml` zgodny z Google Merchant (RSS 2.0 z przestrzenią `g:`) bezpośrednio z bazy PrestaShop. Dodatkowo repozytorium zawiera narzędzia pomocnicze: proste UI do ręcznej konwersji CSV → XML oraz narzędzie CLI do wsadowej konwersji. Do wygenerowania CSV możesz użyć dołączonego zapytania SQL.
 
 ## Co jest w środku
 
-- `query.sql` – zapytanie SQL dla PrestaShop generujące CSV z wymaganymi kolumnami.
-- `convert.py` – narzędzie CLI konwertujące CSV na XML Google Merchant.
-- `app.py` – lekki serwer Flask z UI do wgrywania CSV, automatycznego pobierania XML oraz endpointem `/product-feed` generującym feed prosto z bazy.
-- `public/index.html` – proste UI do wgrywania pliku w przeglądarce.
+- `app.py` – aplikacja Flask hostująca `/product-feed.xml` z cache (domyślnie 15 min). Zawiera też endpoint `/convert` do ręcznej konwersji wgrywanego CSV.
+- `public/index.html` – proste UI w przeglądarce do ręcznej konwersji CSV → XML (opcjonalnie).
+- `query.sql` – zapytanie SQL dla PrestaShop zwracające dane pod feed; używane przez endpoint `/product-feed.xml` i narzędzia pomocnicze.
+- `convert.py` – narzędzie CLI konwertujące CSV na XML Google Merchant (narzędzie pomocnicze).
 
 ## Wymagania
 
@@ -45,7 +45,7 @@ W razie potrzeby możesz zmienić ID języka/sklepu w `query.sql` (w klauzulach 
 - Otwórz w przeglądarce: http://localhost:8000/convert
 - Przeciągnij i upuść CSV (lub wybierz plik), kliknij „Konwertuj”. Przeglądarka pobierze gotowy plik `XML`.
 
-Domyślne parametry (nazwa sklepu, URL sklepu, szablony linków produktów/obrazów, waluta) są ustawione w `app.py` w wywołaniu `convert.py`. Dostosuj je do własnego sklepu (sekcja „Dostosowanie”).
+Domyślne parametry (nazwa sklepu, URL sklepu, szablony linków produktów/obrazów, waluta) są ustawione w `app.py` w wywołaniu `convert.py`. Dostosuj je do własnego sklepu.
 
 Uwaga: serwer przyjmuje pliki do 20 MB, zapisuje je tymczasowo w `uploads/` i generuje XML do `outputs/`. Pliki XML starsze niż 24h są czyszczone.
 

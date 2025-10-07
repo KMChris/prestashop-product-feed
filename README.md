@@ -6,13 +6,13 @@ Konwerter CSV (eksport z PrestaShop) do feedu XML zgodnego z Google Merchant (RS
 
 - `query.sql` – zapytanie SQL dla PrestaShop generujące CSV z wymaganymi kolumnami.
 - `convert.py` – narzędzie CLI konwertujące CSV na XML Google Merchant.
-- `app.py` – lekki serwer Flask z UI do wgrywania CSV i automatycznego pobierania XML.
+- `app.py` – lekki serwer Flask z UI do wgrywania CSV, automatycznego pobierania XML oraz endpointem `/product-feed` generującym feed prosto z bazy.
 - `public/index.html` – proste UI do wgrywania pliku w przeglądarce.
 
 ## Wymagania
 
 - Python 3.8+ (sprawdzane przez `convert.py`).
-- Do trybu web: `Flask` (biblioteka Pythona). Sam konwerter (`convert.py`) używa tylko standardowej biblioteki.
+- Do trybu web: zależności z `requirements.txt` (`Flask`, `PyMySQL`). Sam konwerter (`convert.py`) używa tylko standardowej biblioteki.
 - CSV zakodowany w UTF‑8 z separatorem `;` (średnik) wygenerowany przez `query.sql`.
 
 ## Eksport CSV z PrestaShop
@@ -36,7 +36,7 @@ W razie potrzeby możesz zmienić ID języka/sklepu w `query.sql` (w klauzulach 
 
 - Zainstaluj zależności:
   ```bash
-  pip install Flask
+  pip install -r requirements.txt
   ```
 - Uruchom serwer:
   ```bash
@@ -48,6 +48,18 @@ W razie potrzeby możesz zmienić ID języka/sklepu w `query.sql` (w klauzulach 
 Domyślne parametry (nazwa sklepu, URL sklepu, szablony linków produktów/obrazów, waluta) są ustawione w `app.py` w wywołaniu `convert.py`. Dostosuj je do własnego sklepu (sekcja „Dostosowanie”).
 
 Uwaga: serwer przyjmuje pliki do 20 MB, zapisuje je tymczasowo w `uploads/` i generuje XML do `outputs/`. Pliki XML starsze niż 24h są czyszczone.
+
+### `/product-feed.xml` – feed bezpośrednio z bazy danych
+
+- Endpoint HTTP GET, który uruchamia zapytanie z `query.sql`, konwertuje wyniki i zwraca gotowy plik XML.
+- Wymaga ustawienia zmiennych środowiskowych z danymi dostępowymi do bazy PrestaShop:
+  - `DB_HOST`
+  - `DB_USER`
+  - `DB_PASSWORD`
+  - `DB_NAME`
+  - opcjonalnie `DB_PORT` (domyślnie `3306`).
+- Wynik feedu jest cache'owany na dysku w `outputs/product_feed.xml`; czas ważności można zmienić przez `FEED_CACHE_SECONDS` (domyślnie 15 minut).
+- Jeśli cache jest świeży, zapytanie do bazy nie jest wykonywane.
 
 ### 2) Tryb CLI (bez serwera)
 
@@ -124,16 +136,16 @@ Opisy HTML są czyszczone do tekstu, by uniknąć błędów walidacji GMC.
 
 ## Hostowanie na serwerze (reverse proxy)
 
-Możesz hostować aplikację na serwerze (np. na tym samym, na którym działa PrestaShop) i przekierować ścieżkę `/convert` w reverse proxy do działającej aplikacji Pythona.
+Możesz hostować aplikację na serwerze (np. na tym samym, na którym działa PrestaShop) i przekierować ścieżkę `/convert` lub `/product-feed.xml` w reverse proxy do działającej aplikacji Pythona.
 
 - Uruchom backend (przykładowo przez gunicorn):
   ```bash
   gunicorn -w 1 -b 127.0.0.1:8000 app:app
   ```
   Upewnij się, że `gunicorn` jest zainstalowany (`pip install gunicorn`).
-- Skonfiguruj reverse proxy (np. Nginx), aby kierował zapytania na ścieżkę `/convert` do backendu:
+- Skonfiguruj reverse proxy (np. Nginx), aby kierował zapytania na ścieżkę `/product-feed.xml` do backendu:
   ```nginx
-  location ^~ /convert {
+  location ^~ /product-feed.xml {
       client_max_body_size 20m;
       proxy_http_version 1.1;
       proxy_set_header Host $host;

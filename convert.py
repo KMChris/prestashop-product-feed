@@ -1,7 +1,7 @@
 import argparse
 import csv
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Iterable, Mapping, Optional, Any
 import sys
@@ -50,6 +50,16 @@ def apply_vat(base_value: str, vat_rate: float) -> str:
     except Exception:
         gross = Decimal("0.00")
     return str(gross)
+
+
+def add_business_days(start: date, days: int) -> date:
+    current = start
+    added = 0
+    while added < max(0, days):
+        current += timedelta(days=1)
+        if current.weekday() < 5:
+            added += 1
+    return current
 
 def build_text(el, text):
     if text is None:
@@ -155,7 +165,9 @@ def generate_feed(rows: Iterable[Mapping[str, Any]], config: FeedConfig) -> byte
         link_rewrite = (row.get("link_rewrite") or "").strip().strip("/")
         category_slug = (row.get("category_slug") or row.get("category") or "").strip().strip("/")
         id_product_attribute = (row.get("id_product_attribute") or "0").strip()
+        base_site_url = (config.site_link or "").rstrip("/")
         link = config.product_url_template.format(
+            SITE_URL=base_site_url,
             id_product=pid,
             id_product_attribute=id_product_attribute,
             link_rewrite=link_rewrite,
@@ -166,6 +178,7 @@ def generate_feed(rows: Iterable[Mapping[str, Any]], config: FeedConfig) -> byte
         id_image = (row.get("id_image") or "").strip()
         if id_image:
             image_link = config.image_url_template.format(
+                SITE_URL=base_site_url,
                 id_image=id_image,
                 link_rewrite=link_rewrite
             )
@@ -179,6 +192,7 @@ def generate_feed(rows: Iterable[Mapping[str, Any]], config: FeedConfig) -> byte
             if not iid or iid == id_image:
                 continue
             add_link = config.image_url_template.format(
+                SITE_URL=base_site_url,
                 id_image=iid,
                 link_rewrite=link_rewrite
             )
@@ -190,8 +204,10 @@ def generate_feed(rows: Iterable[Mapping[str, Any]], config: FeedConfig) -> byte
         availability = infer_availability(qty_val, out_of_stock_mode, config.availability_default)
         add_g(item, "availability", availability)
 
-        if row.get("available_date") and availability in ("preorder", "backorder") and row.get("available_date") != "0000-00-00":
-            add_g(item, "availability_date", row.get("available_date"))
+        available_date_value = row.get("available_date")
+        if availability in ("preorder", "backorder") and available_date_value == "0000-00-00":
+            available_date_value = add_business_days(date.today(), 5).isoformat()
+        add_g(item, "availability_date", available_date_value)
 
         cond = (row.get("condition") or config.condition_default).strip()
         add_g(item, "condition", cond)

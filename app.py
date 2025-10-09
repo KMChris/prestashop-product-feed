@@ -31,12 +31,14 @@ except (TypeError, ValueError):
 FEED_CACHE_PATH = OUTPUT_DIR / "product_feed.xml"
 FEED_CACHE_LOCK = threading.Lock()
 
+SITE_URL = os.environ.get("SITE_URL", "https://twojsklep.pl")
+SHOP_NAME = os.environ.get("SHOP_NAME", "Twój sklep")
 PRODUCT_FEED_CONFIG = FeedConfig(
-    shop_name="Twój sklep",
-    site_link="https://www.twojsklep.pl",
+    shop_name=SHOP_NAME,
+    site_link=SITE_URL,
     channel_description="Product feed",
-    product_url_template="https://twojsklep.pl/{category_slug}/{id_product}-{id_product_attribute}-{link_rewrite}.html",
-    image_url_template="https://twojsklep.pl/{id_image}-large_default/{link_rewrite}.jpg",
+    product_url_template="{SITE_URL}/{category_slug}/{id_product}-{id_product_attribute}-{link_rewrite}.html",
+    image_url_template="{SITE_URL}/{id_image}-large_default/{link_rewrite}.jpg",
     currency="PLN",
 )
 ALLOWED_EXTENSIONS = {"csv"}
@@ -122,10 +124,10 @@ def convert():
             ["python", "convert.py",
              "--csv-path", str(csv_path),
              "--out-xml", str(xml_path),
-             "--shop-name", "Twój sklep",
-             "--site-link", "https://www.twojsklep.pl",
-             "--product-url-template", "https://twojsklep.pl/{category_slug}/{id_product}-{id_product_attribute}-{link_rewrite}.html",
-             "--image-url-template", "https://twojsklep.pl/{id_image}-large_default/{link_rewrite}.jpg",
+             "--shop-name", SHOP_NAME,
+             "--site-link", SITE_URL,
+             "--product-url-template", "{SITE_URL}/{category_slug}/{id_product}-{id_product_attribute}-{link_rewrite}.html",
+             "--image-url-template", "{SITE_URL}/{id_image}-large_default/{link_rewrite}.jpg",
              "--currency", "PLN"],
             capture_output=True, text=True
         )

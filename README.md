@@ -52,13 +52,19 @@ Uwaga: serwer przyjmuje pliki do 20 MB, zapisuje je tymczasowo w `uploads/` i ge
 ### `/product-feed.xml` – feed bezpośrednio z bazy danych
 
 - Endpoint HTTP GET, który uruchamia zapytanie z `query.sql`, konwertuje wyniki i zwraca gotowy plik XML.
-- Wymaga ustawienia zmiennych środowiskowych z danymi dostępowymi do bazy PrestaShop:
-  - `DB_HOST`
-  - `DB_USER`
-  - `DB_PASSWORD`
-  - `DB_NAME`
-  - opcjonalnie `DB_PORT` (domyślnie `3306`).
-- Wynik feedu jest cache'owany na dysku w `outputs/product_feed.xml`; czas ważności można zmienić przez `FEED_CACHE_SECONDS` (domyślnie 15 minut).
+- Zmienne środowiskowe:
+  - Dostęp do bazy (wymagane):
+    - `DB_HOST`
+    - `DB_USER`
+    - `DB_PASSWORD`
+    - `DB_NAME`
+    - opcjonalnie `DB_PORT` (domyślnie `3306`).
+  - Parametry kanału i linków (opcjonalne):
+    - `SITE_URL` – bazowy URL sklepu używany do budowy linków produktów i obrazów oraz `<channel><link>`. Bez końcowego `/`. Domyślnie: `https://twojsklep.pl`.
+    - `SHOP_NAME` – nazwa sklepu wyświetlana w `<channel><title>`. Domyślnie: `Twój sklep`.
+  - Cache:
+    - `FEED_CACHE_SECONDS` – czas ważności cache feedu (w sekundach). `0` wyłącza cache. Domyślnie: `900` (15 minut).
+- Wynik feedu jest cache'owany na dysku w `outputs/product_feed.xml`. Jeśli cache jest świeży, zapytanie do bazy nie jest wykonywane.
 - Jeśli cache jest świeży, zapytanie do bazy nie jest wykonywane.
 
 ### 2) Tryb CLI (bez serwera)
@@ -143,6 +149,7 @@ Możesz hostować aplikację na serwerze (np. na tym samym, na którym działa P
   gunicorn -w 1 -b 127.0.0.1:8000 app:app
   ```
   Upewnij się, że `gunicorn` jest zainstalowany (`pip install gunicorn`).
+  Przed uruchomieniem możesz ustawić zmienne środowiskowe, np. `SITE_URL` i `SHOP_NAME`.
 - Skonfiguruj reverse proxy (np. Nginx), aby kierował zapytania na ścieżkę `/product-feed.xml` do backendu:
   ```nginx
   location ^~ /product-feed.xml {
